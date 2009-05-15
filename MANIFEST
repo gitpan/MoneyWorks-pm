@@ -1,0 +1,12 @@
+Changes
+lib/MoneyWorks.pm
+lib/MoneyWorks.pod
+Makefile.PL
+MANIFEST
+README
+t/Acme.mwd5
+t/prod-import.impo
+t/test.t
+t/tests.pm
+t/wax.txt
+META.yml                                 Module meta-data (added by MakeMaker)
