@@ -1,6 +1,13 @@
 Revision history for MoneyWorks.pm
 
-’Fraid there aren’t any changes yet.
+0.02  16 May, 2009
+    • Port numbers are no longer inserted  automatically  into  money-
+      works://  URLs.  (I didn’t realise at first that there are *two*
+      default ports, depending on the type of server.)
+    • For the sake of security,  file names are no longer  passed  to
+      moneyworks on the command line, but through STDIN.
+    • Password-protected local files can now be opened  (this feature
+      was documented in the  first  release,  but  was  never  added).
 
 0.01  15 May, 2009
       First release.

@@ -6,6 +6,7 @@ MANIFEST
 README
 t/Acme.mwd5
 t/prod-import.impo
+t/protected.mwd5
 t/test.t
 t/tests.pm
 t/wax.txt

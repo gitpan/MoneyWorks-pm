@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use #
 strict; use #
@@ -28,8 +28,7 @@ our @BinPaths = (
  'C:/Program Files/MoneyWorks Gold/MoneyWorks Gold.exe',
 );
 
-our $DefaultPort = 6699;
-our %Fields; # defined further down, to keep it out of the whey
+#our %Fields; # defined further down, to keep it out of the whey
 
 no constant 1.03 ();
 use constant::lexical {
@@ -75,15 +74,13 @@ sub _accessor {
  @_ > 2 ? ( $_[1][$_[0]] = $_[2], $_[1]->close, $_[2] ) : $_[1][$_[0]]
 }
 
-my @bad_env_vars = qw(PATH IFS CDPATH ENV BASH_ENV);
-
 sub command {
  my $self = shift;
  my $command = shift;
 
  croak "Commands cannot contain line breaks" if $command =~ /[\r\n]/;
 
- my $handle;
+ my($rh,$wh,$maybe_open_file);
  my $tmp; # For single-process mode: the stderr handle (which is not even
           # used) needs to last till the end of the sub to avoid giving the
           # child proc a SIGPIPE
@@ -91,90 +88,78 @@ sub command {
  my $live = $self->[_live];
  if($live) { # keep-alive
   # fetch the handles, creating them if necessary
-  ($handle, my $wh) = @{ $self->[_hndl] ||= do{
-   _cmd_sanity_check($self);
-
-   # remove unsafe env vars temporarily
-   local(@ENV{@bad_env_vars}), delete @ENV{@bad_env_vars} if ${AINT};
-
+  ($rh, $wh) = @{ $self->[_hndl] ||= do{
    # start the process
-   my $pid = open3(my($wh,$rh), my $eh = geniosym, _bin_args($self))
-    or croak "MoneyWorks ($self->[_bina]) could not be run: $!";
+   my $pid = _open($self, my($wh,$rh), my $eh = geniosym);
    $self->[_prid] = $pid;
-   select +( select($wh), $|=1 )[0];
-
-   # check the connection status if we are opening a file
-   if(defined $self->[_file]) {
-    my $headers = _read_headers($rh);
-    $$headers{Status} eq 'OK'
-     or _croak($self,$headers);
-   }
+   ++$maybe_open_file;
 
    # return the handles
    [$rh,$wh,$eh] # $eh is not used but we hang on to it to avoid SIGPIPING
   } };           # the child process.
-  
-  # send the command
-  local $\ = "\n";
-  print $wh $command;
  }
- else { # single process (the easy way)
-  _cmd_sanity_check($self);
+ else { # single command (the easy way)
+  _open( $self, $wh, $rh, $tmp = geniosym );
+  ++$maybe_open_file;
+ }
 
-  # remove unsafe env vars temporarily
-  local(@ENV{@bad_env_vars}), delete @ENV{@bad_env_vars} if ${AINT};
+ local $\ = "\n";
+ select +( select($wh), $|=1 )[0];
 
-  # run the command
-  open3 my $wh_not_even_used, $handle, $tmp = geniosym,
-    _bin_args($self, '-e', $command)
-   or croak "MoneyWorks ($self->[_bina]) could not be run: $!";
+ # open a file if necessary
+ if($maybe_open_file and defined $self->[_file]) {
+   # avoid problems with files name -e
+   (my $file = $self->[_file]) =~ s|^-|./-|;
+   
+   # prepare the open file command
+   my $command = "open file=".mw_cli_quote($file);
+   my($u,$p) = @$self[_user,_pswd];
+   no warnings 'uninitialized';
+   defined $u && length $u and
+    $command .= " login=".mw_cli_quote("$u:$p");
 
-  # check the connection status if we are opening a file
-  if(defined $self->[_file]) {
-   my $headers = _read_headers($handle);
+   # send the command
+   print $wh $command;
+
+   # check result
+   my $headers = _read_headers($rh);
    $$headers{Status} eq 'OK'||_croak($self,$headers);
-  }
  }
+
+ # send the command
+ print $wh $command;
 
  # parse output headers
- my $headers = _read_headers($handle);
+ my $headers = _read_headers($rh);
 
  # check status
  $$headers{Status} eq 'OK' or _croak($self,$headers);
 
  # return data
- if($live) {
-  if(exists $$headers{'Content-Length'}) { # omitted when the empty string
+ if(exists $$headers{'Content-Length'}) { # omitted when the empty string
    my $data;                               # is returned
-   read $handle, $data, $$headers{'Content-Length'};
+   read $rh, $data, $$headers{'Content-Length'};
 
    $data;
-  }
-  else { '' }
  }
- else {
-  local $/;
-  <$handle>;
- }
+ else { '' }
 }
 
-sub _cmd_sanity_check {
+my @bad_env_vars = qw(PATH IFS CDPATH ENV BASH_ENV);
+
+sub _open {
  my $self = shift;
+
+ # insanity check
  defined $self->[_bina]
     or croak "MoneyWorks could not be run: no path specified";
-}
 
-sub _bin_args {
- my $self = shift;
- my $file = $self->[_file];
- if($file) {
-  $file =~ s|^(moneyworks://[^:/?]+)([?/])|$1:$DefaultPort|
-  or $file =~ s|^-|./-|;
- }
+ # remove unsafe env vars temporarily
+ local(@ENV{@bad_env_vars}), delete @ENV{@bad_env_vars} if ${AINT};
+
  my $rego = $self->[_rego];
- $self->[_bina], @_, '-h',
-  $rego ? ('-r', $rego) : (),
-  defined $file ? $file : ();
+ open3(@_, $self->[_bina], '-h', $rego ? ('-r', $rego) : ())
+    or croak "MoneyWorks ($self->[_bina]) could not be run: $!";
 }
 
 # From: Rowan Daniell <rowan [at a server named] cognito.co.nz>
@@ -215,6 +200,7 @@ sub _croak { # Extracts error message from headers hash
  my $self  = shift;
  my $h = shift;
  my $msg;
+warn $h, caller unless ref $h eq 'HASH';
  if(exists $$h{Diagnostic}) {
   ($msg = $$h{Diagnostic}) =~ s/^\[ERROR] //;
  }

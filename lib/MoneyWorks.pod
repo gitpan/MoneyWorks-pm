@@ -5,7 +5,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
 
 =head1 VERSION
 
-0.01 (beta)
+0.02 (beta)
 
 =head1 SYNOPSIS
 
@@ -107,15 +107,18 @@ Registration number
 
 =item passwd
 
-Log-in credentials
+Log-in credentials for local files. For documents on servers, include the
+credentials in the URL.
 
 =item file
 
 The company file to open. This can be a local file path or a moneyworks://
 URL (see L<http://cognito.co.nz/support.faq.php?art=url>).
 
-You do not need to include a port number in a moneyworks:// URL, as
-this module will put it there for you.
+If you are using a moneyworks:// URL, you must include a port
+number if running under a user without a preference file, such as www. If
+there C<is> a preference file, MoneyWorks will assume the last used port
+number. Always provide one to be on the safe side.
 
 =item bin
 

@@ -1,6 +1,17 @@
-MoneyWorks.pm, version 0.01 (beta)
+MoneyWorks.pm, version 0.02 (beta)
 
 Perl interface to MoneyWorks accounting software
+
+
+CHANGES IN THIS RELEASE
+
+• Port numbers  are  no  longer  inserted  automatically  into  money-
+  works://  URLs.  (I didn’t realise at first  that  there  are  *two*
+  default ports, depending on the type of server.)
+• For the sake of security,  file  names  are  no  longer  passed  to
+  moneyworks on the command line, but through STDIN.
+• Password-protected local files can now be opened  (this feature was
+  documented in the first release, but was never added).
 
 
 INSTALLATION

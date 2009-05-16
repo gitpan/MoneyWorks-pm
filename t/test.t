@@ -94,6 +94,17 @@ my $m_live = new MoneyWorks
  keep_alive => 1,
 ;
 
+use tests 1; # password-protected file
+{
+ my $m = new MoneyWorks
+  bin => $bin,
+  file => 't/protected.mwd5',
+  rego => $::REGO,
+  user => 123,
+  password => 789
+ ;
+ is $m->eval('name'), 'Acme Veggies Ltd', 'password-protected file';
+}
 
 use tests 4; # version
 {
@@ -337,6 +348,3 @@ use tests 6; # quoting functions
   'mw_str_quote(q["`])';
  like mw_str_quote('foo'), qr/^([`"])foo\1\z/, 'mw_str_quote(q[foo])';
 }
-
-# ~~~ test file access with a password-protected file
-
