@@ -2,12 +2,13 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use #
 strict; use #
 warnings; no #
 warnings qw 'utf8 parenthesis regexp once qw';
+use warnings'register;
 
 use Carp 'croak';
 use Exporter 5.57 'import';
@@ -79,6 +80,8 @@ sub command {
  my $command = shift;
 
  croak "Commands cannot contain line breaks" if $command =~ /[\r\n]/;
+ warnings'warnif(__PACKAGE__,"Command contains null chars")
+  if $command =~ y/\0//d;
 
  my($rh,$wh,$maybe_open_file);
  my $tmp; # For single-process mode: the stderr handle (which is not even
@@ -200,11 +203,11 @@ sub _croak { # Extracts error message from headers hash
  my $self  = shift;
  my $h = shift;
  my $msg;
-warn $h, caller unless ref $h eq 'HASH';
  if(exists $$h{Diagnostic}) {
   ($msg = $$h{Diagnostic}) =~ s/^\[ERROR] //;
+  $msg .= ": " if exists $$h{Error};
  }
- else{ $msg = $$h{Error} }
+ $msg .= $$h{Error} if exists $$h{Error};
  $self->close;
  croak("Moneyworks error: $msg");
 }
@@ -215,6 +218,7 @@ sub version {
 
 sub eval {
  my($self,$expr) = @_;
+ $expr =~ y/\r\n/  /;
  shift->command('evaluate expr=' . mw_cli_quote($expr));
 }
 
@@ -324,14 +328,40 @@ This may be added later. There are currently serious problems with it.
  \%ret;
 }
 
+my %all_fields;
+
 sub export {
  my($self,%args) = @_;
 
- # prepare the command
+ # determine what the rettype will be
+ my $using_hash = exists $args{key};
+ my $key = delete $args{key};
+
+ # get the list of fields
+ my $table = delete $args{table};
+ my $qtable = mw_cli_quote($table);
  my $fields = delete $args{fields};
+ defined $fields or $fields = $all_fields{lc $table} ||= [
+  split "\t", (
+   $self->command(
+    "export table=$qtable search='='"
+   ) =~ /([^\r\n]+)/
+  )[0]
+ ];
+
+ # determine whether the key needs to be added to the list of fields
+ my $key_is_in_fields;
+ if($using_hash) {
+  for(@$fields) {
+   $_ eq $key and ++$key_is_in_fields, last;
+  }
+  $key_is_in_fields or push @$fields, $key;
+ }
+
+ # prepare the command
  my $command =
   'export'
-  .' table=' . mw_cli_quote(delete $args{table})
+  .' table=' . mw_cli_quote($table)
   .' format=' . mw_cli_quote(
                  join('\t', map "[$_]", @$fields).'\n'
                 );
@@ -342,8 +372,8 @@ sub export {
  my $output = $self->command($command);
 
  # parse the output
- my $ret = (my $using_hash = exists $args{key})
-           ? (my $key = delete $args{key}, {})
+ my $ret = $using_hash
+           ? {}
            : [];
  for my $line(split /\n/, $output) {
   my %record;
@@ -351,6 +381,7 @@ sub export {
   $using_hash
    ? $$ret{$record{$key}} = \%record
    : push @$ret, \%record;
+  delete $record{$key} if $using_hash && ! $key_is_in_fields;
  }
 
  # return
@@ -412,7 +443,9 @@ sub TIEHASH {
       .' format="1"'
       .' search='
    ) . MoneyWorks::mw_cli_quote(
-                   "$self->[key]=" . MoneyWorks'mw_str_quote($row)
+         "Replace($self->[key],`\@`,`\1`)=Replace("
+           . MoneyWorks'mw_str_quote($row)
+         .",`\@`,`\1`)"
        )
   );
  }
@@ -428,7 +461,12 @@ sub TIEHASH {
      . mw_str_quote("$self->[table].$field") . ','
      . ( 
         $self->[cached]
-          ||= mw_str_quote("$self->[key]=" . mw_str_quote($self->[row]))
+          ||= do {
+           (my $row = $$self[row]) =~ y/\@/\1/;
+           mw_str_quote(
+            "Replace($self->[key],`\@`,`\1`)=" . mw_str_quote($row)
+           )
+          }
        )
    .')'
   );
@@ -440,6 +478,9 @@ sub TIEHASH {
 
 sub mw_cli_quote($) {
  my $str = shift;
+ warnings'warnif
+   __PACKAGE__,"Argument to mw_cli_quote contains line breaks"
+  if $str =~ /[\r\n]/;
  my $delim = chr 0x7f;
  while(index $str, $delim, != -1) {
   --vec $delim, 0, 8, == 31

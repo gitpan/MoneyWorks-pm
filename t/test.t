@@ -119,12 +119,13 @@ use tests 4; # version
 }
 $m_no_file_live->close;
 
-use tests 2; # eval
+use tests 3; # eval
 {
  is $m_live->eval('name'), 'Acme Widgets Ltd', 'eval';
  # Double test here; we are also testing commands containing DEL, which we
  # would otherwise use as a delimiter:
  is $m_no_file->eval("`\x7f`"), "\x7f", 'eval with \x7f (no file)';
+ is $m_live->eval("1\n+\n1"), 2, 'eval strips line breaks';
 }
 
 #use tests 8; # import
@@ -223,7 +224,7 @@ if(0){
  ), join("|", map $$data{$_}, @keys), 'result of array import';
 }
 
-use tests 2; # export
+use tests 4; # export
 {
  is_deeply
   [ sort { $$a{Code} cmp $$b{Code} } @{ $m_live->export(
@@ -304,6 +305,48 @@ use tests 2; # export
    },
   },
   'export with key';
+ is_deeply
+  $m_live->export(
+   table => 'Product',
+   fields => ['Description','SellPrice'],
+   search => 'Left(Code,1) == `B`',
+   key     => 'Code',
+  ),
+  {
+   BA100 => {
+    Description => "Bronze Widget Medium",
+    SellPrice => 24.95
+   },
+   BA200 => {
+    Description => "Bronze Widget Large",
+    SellPrice => 69.75
+   },
+   BB100 => {
+    Description => "Bronze Widget Bevelled Medium",
+    SellPrice => 22
+   },
+   BB200 => {
+    Description => "Bronze Widget Bevelled Large",
+    SellPrice => 32
+   },
+   BC100 => {
+    Description => "Bronze Taper Widget Small",
+    SellPrice => 12
+   },
+   BC200 => {
+    Description => "Bronze Taper Widget Medium",
+    SellPrice => 21.5
+   },
+  },
+  'export with key that is not in the list of exported fields';
+ my $export = $m_live->export(
+   table => 'Product',
+   search => 'Left(Code,1) == `B`',
+   key     => 'Code',
+ );
+ cmp_ok $export->{BC200}->{BuyPrice}, '==', 8,
+  'export without explicit fields list'
+  ;# or do{ use DDS; diag Dump $export};
 }
 
 use tests 3; # child proc methods
@@ -315,7 +358,7 @@ use tests 3; # child proc methods
  is kill(0,$pid), 0, "close terminated $pid";
 }
 
-use tests 5; # ties
+use tests 7; # ties
 {
  my $tie = $m_live->tie("Name", "Code");
  ok !exists $tie->{ehuioyoy}, 'Ties: Customer ehuioyoy does not exist.';
@@ -324,6 +367,12 @@ use tests 5; # ties
  is $record->{Name}, 'Brown Suppliers', 'Ties: retrieve value from record';
  $m_live->eval('Replace(`Name.Name`,`Code="BROWN"`,`"Brown Briars"`)');
  is $record->{Name}, 'Brown Briars', 'Ties: retrieved record is live';
+
+ $tie = $m_live->tie("name","email");
+ ok !exists $$tie{'accounts@chext.gued'},
+  'The EXISTS method of a table tie can deal with @ signs.';
+ is $$tie{'accounts@brown.co'}{name}, 'Brown Briars',
+  'Ties can handle @ when fetching individual fields';
 
  $m_live->close;
 
@@ -337,7 +386,7 @@ use tests 5; # ties
  is $h{1869}{NameCode}, 'GREEN', 'tie function';
 }
 
-use tests 6; # quoting functions
+use tests 7; # quoting functions
 {
  my $str = join "", map chr, 33..127;
  like mw_cli_quote('foo'), qr/^([^fo])foo\1\z/, 'mw_cli_quote';
@@ -347,4 +396,23 @@ use tests 6; # quoting functions
  like mw_str_quote('"`'), qr/^(?:`\\?"\\``|"\\"\\?`")\z/,
   'mw_str_quote(q["`])';
  like mw_str_quote('foo'), qr/^([`"])foo\1\z/, 'mw_str_quote(q[foo])';
+
+ my $w;
+ local $SIG{__WARN__} = sub { $w = shift };
+ use warnings;
+ mw_cli_quote "\n";
+ like $w, qr/^Argument to mw_cli_quote contains line breaks/,
+  'mw_cli_quote warns with line breaks';
+
+}
+
+use tests 4; # command
+{
+ ok !eval { $m_live->command("\n");1}, 'command dies with line breaks';
+ like $@, qr/^Commands cannot contain line breaks/, 'error message';
+ my $w;
+ local $SIG{__WARN__} = sub { $w = shift };
+ use warnings;
+ is $m_live->command("evaluate expr='1\0+1'"), '2', 'command strips nulls';
+ like $w, qr/^Command contains null chars/, 'warning message';
 }

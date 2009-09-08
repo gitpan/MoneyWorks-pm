@@ -5,7 +5,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
 
 =head1 VERSION
 
-0.02 (beta)
+0.03 (beta)
 
 =head1 SYNOPSIS
 
@@ -17,7 +17,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
   $m = new MoneyWorks::
     rego   => $registration_number,
     user   => $user,
-    passwd => $password,
+    password => $password,
     file   => $filename,
     bin    => '/usr/bin/moneyworks',
     keep_alive => 0;  # default is 1
@@ -35,7 +35,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
   
   my $hashref = $m->export(
     table => $table,
-    fields => \@fields,
+    fields => \@fields,  # optional; all fields by default
     search => $search,
     key => $key, # if key is omitted an array ref is returned
   );
@@ -80,7 +80,7 @@ This will be added to the synopsis later if I can get it working:
 =head1 DESCRIPTION
 
 This module provides a Perl interface to MoneyWorks Gold or MoneyWorks
-Datacentre.
+Datacentre Client.
 
 It uses the command line interface, either running individual commands
 (with C<< keep_alive => 0 >>) option, or maintaining a single moneyworks
@@ -105,7 +105,7 @@ Registration number
 
 =item user
 
-=item passwd
+=item password
 
 Log-in credentials for local files. For documents on servers, include the
 credentials in the URL.
@@ -173,7 +173,9 @@ Returns the MoneyWorks version number.
 
 =item eval
 
-Evaluates the MoneyWorks expression and returns the result.
+Evaluates the MoneyWorks expression and returns the result. This method
+also replaces line breaks with spaces, to make it easier to write long
+expressions. (MoneyWorks expressions cannot contain line breaks.)
 
 =item import ( data => $str, map => $file )
 
@@ -209,11 +211,14 @@ This only applies to Product, Name, ...
 Retrieve data from MoneyWorks. C<%options> are as follows:
 
   table   The name of the table (aka 'file')
-  fields  Array ref of field names to retrieve
+  fields  Array ref of field names to retrieve (optional)
   search  Search string (filter) in MoneyWorks 'Calculations and
           Things' syntax
-  key     Which field to use as a hash key for each record
+  key     Which field to use as a hash key for each record (the
+          key does not need to be included in the list of fields)
           (optional)
+
+If C<fields> is omitted, all fields are returned.
 
 If C<key> is not specified, this method returns an array ref of hash refs;
 otherwise it returns a hash ref of hash refs.
@@ -300,12 +305,33 @@ This functions quotes its arguments for use as a string in MoneyWorks
 expressions. It escapes characters as necessary and chooses either " or `
 as the delimiter.
 
+=head1 WARNINGS
+
+You may see these messages if you have warnings enabled.
+
+=over
+
+=item Command contains null chars
+
+If you have warnings enabled and you (directly or indirectly) pass a string
+to the C<command> method that contains null characters, you will see this
+message. Null bytes confuse MoneyWorks and cause the input and output to
+get out of sync, so the module strips them and warns if it finds them.
+
+=item Argument to mw_cli_quote contains line breaks
+
+Commands cannot contain line breaks. C<mw_cli_quote> is not capable of
+escaping them, so it warns.
+
 =head1 LIMITATIONS
 
 There is no easy way to edit individual fields in MoneyWorks' databases;
 you have to create a custom import map. Another way is to evaluate an
 expression containing the undocumented Replace() function. The syntax is
 Replace("table.field", "search expression", "replacement expression").
+
+The tie interface does not work with the C<keys> and C<each> functions. It
+would be very hard to implement this efficiently.
 
 =head1 BUGS
 
