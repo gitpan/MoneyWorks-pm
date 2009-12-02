@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use #
 strict; use #
@@ -111,7 +111,7 @@ sub command {
 
  # open a file if necessary
  if($maybe_open_file and defined $self->[_file]) {
-   # avoid problems with files name -e
+   # avoid problems with files named -e
    (my $file = $self->[_file]) =~ s|^-|./-|;
    
    # prepare the open file command
@@ -239,8 +239,8 @@ sub import {
   }
   else {
    my $data = delete $args{data};
-   $data =~ s/\n\z//;
-   if($data =~ /\n/) {
+   $data =~ s/(?:\r\n?|\n)\z//;
+   if($data =~ /[\n\r]/) {
     # write the data to a temporary file and use that
     require File::Temp;
     my($fh,$filename)

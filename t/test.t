@@ -1,5 +1,6 @@
 #!perl -T
 
+use lib 't';
 use MoneyWorks;
 use Test::More;
 
@@ -128,34 +129,52 @@ use tests 3; # eval
  is $m_live->eval("1\n+\n1"), 2, 'eval strips line breaks';
 }
 
-#use tests 8; # import
-if(0){
- is_deeply
+use tests 12; # import
+is_deeply
   $m_live->import( data => "CBG\tCabbage", map => 't/prod-import.impo' ),
   { created => 1, updated => 0 },
   'import(data => single record)';
- is $m_live->command(
+is $m_live->command(
   'export table=/Product/ format=/[Description]/ search=/Code="CBG"/'
- ), 'Cabbage', 'result of import';
+), 'Cabbage', 'result of import';
  
- is_deeply $m_live->import(
+is_deeply $m_live->import(
   data => "SHOE1\tRed Shoes\nSHOE2\tGreen Shoes\n",
   map => 't/prod-import.impo'
- ), { created => 2, updated => 0 }, 'import(data => multiple)';
- is $m_live->command(
+), { created => 2, updated => 0 }, 'import(data => multiple)';
+is $m_live->command(
   'export table=/Product/ format=/[Code]-[Description]\n/ '
   . 'search=/Left(Code,4)="SHOE"/'
- ), "SHOE1-Red Shoes\nSHOE2-Green Shoes\n", 'result of multiple import';
+), "SHOE1-Red Shoes\nSHOE2-Green Shoes\n", 'result of multiple import';
  
- is_deeply $m_live->import(
+is_deeply $m_live->import(
+  data => "CHOU1\tRed Chou\rCHOU2\tGreen Chou\r",
+  map => 't/prod-import.impo'
+), { created => 2, updated => 0 }, 'import(data => multiple [with CR])';
+is $m_live->command(
+  'export table=/Product/ format=/[Code]-[Description]\n/ '
+  . 'search=/Left(Code,4)="CHOU"/'
+), "CHOU1-Red Chou\nCHOU2-Green Chou\n",'result of multiple import w/CR';
+ 
+is_deeply $m_live->import(
+  data => "COK1\tRed COK\r\nCOK2\tGreen COK\r\n",
+  map => 't/prod-import.impo'
+), { created => 2, updated => 0 }, 'import(data => multiple [with CRLF])';
+is $m_live->command(
+  'export table=/Product/ format=/[Code]-[Description]\n/ '
+  . 'search=/Left(Code,3)="COK"/'
+), "COK1-Red COK\nCOK2-Green COK\n",'result of multiple import w/CRLF';
+ 
+is_deeply $m_live->import(
   data_file => "t/wax.txt",
   map => 't/prod-import.impo'
- ), { created => 2, updated => 0 }, 'file import';
- is $m_live->command(
+), { created => 2, updated => 0 }, 'file import';
+is $m_live->command(
   'export table=/Product/ format=/[Code]|[Description]\n/ '
   .'search=/Left(Code,4)="WAX-"/'
- ), "WAX-C|Ceiling Wax\nWAX-F|Floor Wax\n", 'result of file import';
+), "WAX-C|Ceiling Wax\nWAX-F|Floor Wax\n", 'result of file import';
 
+SKIP:{skip"not supported",2;
  is_deeply $m_live->import(
   table => 'product',
   data => [ my $data = {

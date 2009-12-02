@@ -7,6 +7,9 @@ README
 t/Acme.mwd5
 t/prod-import.impo
 t/protected.mwd5
+#t/Test/Builder/Module.pm
+#t/Test/Builder.pm
+#t/Test/More.pm
 t/test.t
 t/tests.pm
 t/wax.txt

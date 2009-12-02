@@ -1,5 +1,10 @@
 Revision history for MoneyWorks.pm
 
+0.04  2 December, 2009
+      The  import  method no longer causes a  ‘Command cannot contain
+      line breaks’ error if the data contain a carriage return but no
+      line feed.
+
 0.03  7 September, 2009
     • Error messages are now  more  verbose.  MoneyWorks.pm  used  to
       choose between  Diagnostic  and  Error  headers,  but it’s  not

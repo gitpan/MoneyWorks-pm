@@ -5,7 +5,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
 
 =head1 VERSION
 
-0.03 (beta)
+0.04
 
 =head1 SYNOPSIS
 
@@ -83,7 +83,7 @@ This module provides a Perl interface to MoneyWorks Gold or MoneyWorks
 Datacentre Client.
 
 It uses the command line interface, either running individual commands
-(with C<< keep_alive => 0 >>) option, or maintaining a single moneyworks
+(with C<< keep_alive => 0 >>), or maintaining a single moneyworks
 process.
 
 It is highly recommended that one read the L<moneyworks> manpage before
@@ -117,7 +117,7 @@ URL (see L<http://cognito.co.nz/support.faq.php?art=url>).
 
 If you are using a moneyworks:// URL, you must include a port
 number if running under a user without a preference file, such as www. If
-there C<is> a preference file, MoneyWorks will assume the last used port
+there I<is> a preference file, MoneyWorks will assume the last used port
 number. Always provide one to be on the safe side.
 
 =item bin
@@ -257,6 +257,8 @@ hash of headers followed by the result in list context.
 
 These methods only apply in keep-alive mode.
 
+=over
+
 =item pid
 
 Returns the process ID of the MoneyWorks process, if there is one.
@@ -305,6 +307,8 @@ This functions quotes its arguments for use as a string in MoneyWorks
 expressions. It escapes characters as necessary and chooses either " or `
 as the delimiter.
 
+=back
+
 =head1 WARNINGS
 
 You may see these messages if you have warnings enabled.
@@ -322,6 +326,8 @@ get out of sync, so the module strips them and warns if it finds them.
 
 Commands cannot contain line breaks. C<mw_cli_quote> is not capable of
 escaping them, so it warns.
+
+=back
 
 =head1 LIMITATIONS
 
