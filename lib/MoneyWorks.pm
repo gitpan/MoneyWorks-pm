@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use #
 strict; use #
@@ -121,6 +121,7 @@ sub command {
    defined $u && length $u and
     $command .= " login=".mw_cli_quote("$u:$p");
 
+   local $SIG{PIPE} = 'IGNORE';
    # send the command
    print $wh $command;
 

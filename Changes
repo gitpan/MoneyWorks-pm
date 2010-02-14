@@ -1,5 +1,9 @@
 Revision history for MoneyWorks.pm
 
+0.05  14 February, 2010
+      We now intercept  SIGPIPEs to stop the perl process from  being
+      killed if the MW process crashes.
+
 0.04  2 December, 2009
       The  import  method no longer causes a  ‘Command cannot contain
       line breaks’ error if the data contain a carriage return but no

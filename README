@@ -1,12 +1,12 @@
-MoneyWorks.pm, version 0.04 (beta)
+MoneyWorks.pm, version 0.05 (beta)
 
 Perl interface to MoneyWorks accounting software
 
 
 CHANGES IN THIS RELEASE
 
-The  import  method can now  handle  records  separated  by  carriage
-returns instead of line feeds.
+We now intercept  SIGPIPEs to stop the perl process from being killed
+if the MW process crashes.
 
 
 INSTALLATION
