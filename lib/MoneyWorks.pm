@@ -2,13 +2,14 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use #
 strict; use #
 warnings; no #
 warnings qw 'utf8 parenthesis regexp once qw';
 use warnings'register;
+BEGIN{ $] >= 5.012 and require Classic'Perl, import Classic'Perl }
 
 use Carp 'croak';
 use Exporter 5.57 'import';
@@ -83,6 +84,10 @@ sub command {
  warnings'warnif(__PACKAGE__,"Command contains null chars")
   if $command =~ y/\0//d;
 
+ # Used by the SIGPIPE handle
+ my $tries;
+ MoneyWorks_COMMAND:
+
  my($rh,$wh,$maybe_open_file);
  my $tmp; # For single-process mode: the stderr handle (which is not even
           # used) needs to last till the end of the sub to avoid giving the
@@ -121,7 +126,9 @@ sub command {
    defined $u && length $u and
     $command .= " login=".mw_cli_quote("$u:$p");
 
-   local $SIG{PIPE} = 'IGNORE';
+   local $SIG{PIPE} = sub {
+    $tries++ < 3 and $self->close, goto MoneyWorks_COMMAND
+   };
    # send the command
    print $wh $command;
 

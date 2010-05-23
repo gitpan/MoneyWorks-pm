@@ -10,6 +10,7 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
      Carp                => 0,
+     $] >= 5.012 ? (Classic'Perl => 0 ) : (),
      constant            => 1.03, # multiple at once
      constant'lexical    => 0,
      Exporter            => 5.57, # use Exporter 'import';

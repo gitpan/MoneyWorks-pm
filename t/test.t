@@ -110,13 +110,13 @@ use tests 1; # password-protected file
 use tests 4; # version
 {
  my $v = $m->version;
- like $v, qr/^\d\.\d\.\d+\z/, "version " . ($v||"");
+ like $v, qr/^[\d\.]+\z/, "version " . ($v||"");
  $v = $m_live->version;
- like $v, qr/^\d\.\d\.\d+\z/, "version" . ($v?" $v":"") . " (live)";
+ like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"") . " (live)";
  $v = $m_no_file->version;
- like $v, qr/^\d\.\d\.\d+\z/, "version" . ($v?" $v":"") . " (no file)";
+ like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"") . " (no file)";
  $v = $m_no_file_live->version;
- like $v, qr/^\d\.\d\.\d+\z/, "version" . ($v?" $v":"")." (no file; live)";
+ like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"")." (no file; live)";
 }
 $m_no_file_live->close;
 

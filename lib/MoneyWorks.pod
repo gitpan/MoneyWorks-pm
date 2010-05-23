@@ -5,7 +5,7 @@ MoneyWorks.pm - Perl interface to MoneyWorks accounting software
 
 =head1 VERSION
 
-0.04
+0.06
 
 =head1 SYNOPSIS
 
@@ -361,9 +361,12 @@ L<constant::lexical>
 
 L<MoneyWorks Gold or Datacentre Client (http://cognito.co.nz/)|http://cognito.co.nz/>
 
+If you are using perl 5.12 or higher, you will also need the
+L<Classic::Perl> module.
+
 =head1 AUTHOR & COPYRIGHT
 
-Copyright (C) 2009, Father Chrysostomos (sprout at, um, cpan dot org)
+Copyright (C) 2009-10, Father Chrysostomos (sprout at, um, cpan dot org)
 
 This program is free software; you may redistribute or modify it (or both)
 under the same terms as perl.

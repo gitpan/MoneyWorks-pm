@@ -1,5 +1,12 @@
 Revision history for MoneyWorks.pm
 
+0.06  23 May, 2010
+    • Instead of ignoring SIGPIPEs, now we start a new MW process and
+      try again.
+    • Fixed to work in perl 5.12 and higher.
+    • The tests for the version method have been fixed to  work  with
+      MoneyWorks 5.3 (two numbers, not three).
+
 0.05  14 February, 2010
       We now intercept  SIGPIPEs to stop the perl process from  being
       killed if the MW process crashes.
