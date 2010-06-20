@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use #
 strict; use #
@@ -126,11 +126,15 @@ sub command {
    defined $u && length $u and
     $command .= " login=".mw_cli_quote("$u:$p");
 
+   my $retry;
    local $SIG{PIPE} = sub {
-    $tries++ < 3 and $self->close, goto MoneyWorks_COMMAND
+    $tries++ < 3 and $self->close, $retry = 1;
    };
    # send the command
    print $wh $command;
+
+   # See whether there was a SIGPIPE
+   goto MoneyWorks_COMMAND if $retry;
 
    # check result
    my $headers = _read_headers($rh);
