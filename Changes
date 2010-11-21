@@ -1,5 +1,8 @@
 Revision history for MoneyWorks.pm
 
+0.08  21 November, 2010
+      Suppress a warning about tie being ambiguous in perl 5.13.x.
+
 0.07  20 June, 2010
       Now the SIGPIPE code hopefully actually works, instead of dying.
 

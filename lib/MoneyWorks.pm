@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use #
 strict; use #
@@ -442,7 +442,8 @@ sub TIEHASH {
  sub MoneyWorks::_table_tie::FETCH {
   my($self,$row) = @_;
   return unless $self->EXISTS($row);
-  tie my %row, 'MoneyWorks::_row_tie', @$self[parent,table,key], $row;
+  CORE::tie
+    my %row, 'MoneyWorks::_row_tie', @$self[parent,table,key], $row;
   \%row;
  }
  sub MoneyWorks::_table_tie::EXISTS {

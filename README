@@ -1,9 +1,13 @@
-MoneyWorks.pm, version 0.07 (beta)
+MoneyWorks.pm, version 0.08 (beta)
 
 Perl interface to MoneyWorks accounting software
 
 
 RECENT CHANGES
+
+0.08
+----
+Suppress a warning about tie being ambiguous in perl 5.13.x.
 
 0.07
 ----
@@ -16,11 +20,6 @@ Now the  SIGPIPE  code hopefully actually  works,  instead  of  dying.
 • Fixed to work in perl 5.12 and higher.
 • The tests for the version method have been fixed to work with Money-
   Works 5.3 (two numbers, not three).
-
-0.05
-----
-We now intercept  SIGPIPEs to stop the perl process from being killed
-if the MW process crashes.
 
 
 INSTALLATION
