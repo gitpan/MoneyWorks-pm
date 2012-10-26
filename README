@@ -1,9 +1,15 @@
-MoneyWorks.pm, version 0.08 (beta)
+MoneyWorks.pm, version 0.09 (beta)
 
 Perl interface to MoneyWorks accounting software
 
 
 RECENT CHANGES
+
+0.09
+----
+• Work around a bug in MoneyWorks, which sometimes begins output with
+ ‘Address already in use’ when the client is running as root.
+• Fix tests to work with MoneyWorks 6. 
 
 0.08
 ----
@@ -12,14 +18,6 @@ Suppress a warning about tie being ambiguous in perl 5.13.x.
 0.07
 ----
 Now the  SIGPIPE  code hopefully actually  works,  instead  of  dying.
-
-0.06
-----
-• Instead of ignoring  SIGPIPEs,  now we start a new  MW  process and
-  try again.
-• Fixed to work in perl 5.12 and higher.
-• The tests for the version method have been fixed to work with Money-
-  Works 5.3 (two numbers, not three).
 
 
 INSTALLATION
@@ -64,7 +62,7 @@ Or try using man (it's faster, in my experience):
 
 COPYRIGHT AND LICENCE
 
-Copyright © 2009-10 Father Chrysostomos
+Copyright © 2009-12 Father Chrysostomos
 
 This program is free software; you may redistribute it, modify it, or
 both, under the same terms as perl.

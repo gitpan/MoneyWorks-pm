@@ -2,7 +2,7 @@ use 5.006;
 
 package MoneyWorks;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 use #
 strict; use #
@@ -201,9 +201,14 @@ sub _read_headers {
  local $/ = "\r\n";
 
  my %headers;
+ my $past_first;
  while(my $line = <$handle>) {
   $line =~ s/\r\n\z//
    or croak "Mangled output from MoneyWorks (no CRLF): $line";
+  # When run under root, MoneyWorks sometimes puts
+  # "Address already in use\n" (without the \r) at the beginning of
+  # its output.
+  $past_first++ or $line =~ s/^Address already in use\n//;
   length $line or last;
   $line =~ s/^([^:]+): // or croak "Mangled output from MoneyWorks: $line";
   $headers{$1} = $line;

@@ -12,16 +12,7 @@ BEGIN {
      . " set the MONEYWORKS_TEST_BIN environment variable before running "
      . "these tests.";
   };
-
-  unless( $::REGO = $ENV{MONEYWORKS_TEST_REGO} ) {
-   require MoneyWorks;
-   eval { MoneyWorks->new( file => 't/Acme.mwd5' )->eval('name') };
-   $@ =~ /serial number/i
-    and plan skip_all => "Please set the MONEYWORKS_TEST_REGO envir"
-       . "onment variable to your MoneyWorks' registration number before"
-       . " running these tests.";
-  }
-
+  $::REGO = $ENV{MONEYWORKS_TEST_REGO};
 }
 
 # untaint the registration number
@@ -41,6 +32,23 @@ use lib 't';
 # keep-alive object after that, to avoid modifying the original Acme.mwd5
 # file in case tests are run again. (The keep-alive object uses a copy.)
 
+my $bin = $ENV{MONEYWORKS_TEST_BIN};
+if($bin) { # untaint
+  $bin =~ /^(.*)\z/s;
+  $bin = $1;
+}
+else { $bin = new MoneyWorks ->bin }
+
+# Run this test early, since we need the version number to determine which
+# file to open.
+use tests 1;
+my $m_no_file = new MoneyWorks bin => $bin, keep_alive => 0;
+my $v = $m_no_file->version;
+like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"") . " (no file)";
+diag "Testing with MoneyWorks $v";
+$v = int $v;
+$v =~ /(.*)/; $v = $1; # untaint
+
 use tests 13; # constructor and accessors
 isa_ok my $m = MoneyWorks->new(
  rego => '12345',
@@ -50,12 +58,6 @@ isa_ok my $m = MoneyWorks->new(
  bin => 'foo',
  keep_alive => 1,
 ), 'MoneyWorks';
-my $bin = $ENV{MONEYWORKS_TEST_BIN};
-if($bin) { # untaint
-  $bin =~ /^(.*)\z/s;
-  $bin = $1;
-}
-else { $bin = new MoneyWorks ->bin }
 {
  ok $m->keep_alive, 'keep_alive arg';
  $m->keep_alive(0);
@@ -74,23 +76,48 @@ else { $bin = new MoneyWorks ->bin }
  is $m->password, undef, 'password accessor';
 
  is $m->file, 'fg.cr.cg', 'file arg';
- $m->file("t/Acme.mwd5");
- is $m->file, "t/Acme.mwd5", 'file accessor';
+ $m->file("t/Acme.mwd$v");
+ is $m->file, "t/Acme.mwd$v", 'file accessor';
 
  is $m->bin, 'foo', 'bin arg';
  $m->bin($bin);
  is $m->bin, $bin, 'bin accessor';
 }
 
-# get our three other MW objects ready
+sub skip_remainder {
+ my $msg = shift;
+ diag $msg;
+ my $builder = builder Test'More;
+ my $expected_tests = expected_tests $builder;
+ my $tests_run_so_far = current_test $builder;
+ my $remainder = $expected_tests - $tests_run_so_far;
+ SKIP: {
+   skip $msg, $remainder;
+ }
+ exit
+}
+
+unless ($v == 5 || $v == 6) {
+ skip_remainder
+   "There are no test files for your version of MoneyWorks ($v)";
+}
+unless( $::REGO = $ENV{MONEYWORKS_TEST_REGO} ) {
+   require MoneyWorks;
+   eval { MoneyWorks->new( file => "t/Acme.mwd$v" )->eval('name') };
+   $@ =~ /serial number/i
+    and skip_remainder "Please set the MONEYWORKS_TEST_REGO envir"
+       . "onment variable to your MoneyWorks' registration number before"
+       . " running these tests.";
+}
+
+# get more MW objects ready
 my $m_no_file_live = new MoneyWorks bin => $bin;
-my $m_no_file = new MoneyWorks bin => $bin, keep_alive => 0;
 use File::Copy;
-copy('t/Acme.mwd5','-e.mwd5'); # We use a file name beginning with '-e' as
-END{ unlink '-e.mwd5' }        # an extra robustness test.
+copy("t/Acme.mwd$v","-e.mwd$v"); # We use a file name beginning with '-e'
+END{ unlink "-e.mwd$v" }         # as an extra robustness test.
 my $m_live = new MoneyWorks
  rego => $::REGO,
- file => '-e.mwd5',
+ file => "-e.mwd$v",
  bin => $bin,
  keep_alive => 1,
 ;
@@ -99,7 +126,7 @@ use tests 1; # password-protected file
 {
  my $m = new MoneyWorks
   bin => $bin,
-  file => 't/protected.mwd5',
+  file => "t/protected.mwd$v",
   rego => $::REGO,
   user => 123,
   password => 789
@@ -107,14 +134,12 @@ use tests 1; # password-protected file
  is $m->eval('name'), 'Acme Veggies Ltd', 'password-protected file';
 }
 
-use tests 4; # version
+use tests 3; # version
 {
  my $v = $m->version;
  like $v, qr/^[\d\.]+\z/, "version " . ($v||"");
  $v = $m_live->version;
  like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"") . " (live)";
- $v = $m_no_file->version;
- like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"") . " (no file)";
  $v = $m_no_file_live->version;
  like $v, qr/^[\d\.]+\z/, "version" . ($v?" $v":"")." (no file; live)";
 }
@@ -397,7 +422,7 @@ use tests 7; # ties
 
  tie my %h, MoneyWorks =>
   rego => $::REGO,
-  file => '-e.mwd5',
+  file => "-e.mwd$v",
   bin  => $bin,
   table => 'Transaction',
   key    => 'OurRef'

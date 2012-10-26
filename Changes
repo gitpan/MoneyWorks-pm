@@ -1,5 +1,11 @@
 Revision history for MoneyWorks.pm
 
+0.09  25 October, 2012
+    • Work around a bug in MoneyWorks,  which sometimes  begins  out-
+      put with  ‘Address already in use’  when  the  client  is  run-
+      ning as root.
+    • Fix tests to work with MoneyWorks 6. 
+
 0.08  21 November, 2010
       Suppress a warning about tie being ambiguous in perl 5.13.x.
 
